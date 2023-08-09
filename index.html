@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset='utf-8'>
+		<meta name='author' content='Anton Yakymenko'>
+		<meta name='viewport' content='width=device-width, initial-scale=1'>
+		<title>synapse-admin</title>
+		<script>
+			window.onload = (event) => {
+				_el('homeserver').value = localStorage.getItem('homeserver');
+				_el('access_token').value = localStorage.getItem('access_token');
+			}
+			function _el(id) {
+				return document.getElementById(id);
+			}
+			function _val(id) {
+				return document.getElementById(id).value;
+			}
+			function credentialsSave() {
+				let homeserver = _val('homeserver');
+				localStorage.setItem('homeserver', homeserver);
+				let access_token = _val('access_token');
+				localStorage.setItem('access_token', access_token)
+			}
+			function credentialsClear() {
+				_el('homeserver').value = '';
+				_el('access_token').value = '';
+				localStorage.clear();
+			}
+			function usersList(users_from) {
+				const homeserver = _val('homeserver');
+				if (!homeserver) {
+					alert('Homeserver URL is required');
+					return;
+				}
+				const access_token = _val('access_token');
+				if (!access_token) {
+					alert('Access token is required');
+					return;
+				}
+				fetch(`${homeserver}/_synapse/admin/v2/users?from=${users_from}&limit=10&guests=true&deactivated=true`, {
+					method: 'GET',
+					headers: { 'Authorization': `Bearer ${access_token}` }
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					return response.json();
+				})
+				.then((data) => {
+					_el('users_total').innerText = `Total users: ${data.total}`;
+					if (data.next_token != undefined) {
+						_el('users_next').setAttribute('onclick', `usersList(${data.next_token})`);
+						_el('users_next').disabled = false;
+					} else {
+						_el('users_next').disabled = true;
+					}
+					let tableHtml = 
+`				<tr>
+					<th>ID</th>
+					<th>Display Name</th>
+					<th>Guest</th>
+					<th>Admin</th>
+					<th>Type</th>
+					<th>Deactivated</th>
+					<th>Erased</th>
+					<th>Shadowbanned</th>
+					<th>Avatar URL</th>
+					<th>Created On</th>
+					<th></th>
+					<th></th>
+				</tr>`;
+					for (let i = 0; i < data.users.length; i++) {
+						let user = data.users[i]; 
+						tableHtml +=
+`				<tr>
+					<td>${user.name}</td>
+					<td>${user.displayname}</td>
+					<td>${user.is_guest ? 'Y' : ''}</td>
+					<td>${user.admin ? 'Y' : ''}</td>
+					<td>${user.user_type ? 'Y' : ''}</td>
+					<td id='user_deactivated_${i}'>${user.deactivated ? 'Y' : ''}</td>
+					<td>${user.erased ? 'Y' : ''}</td>
+					<td>${user.shadow_banned ? 'Y' : ''}</td>
+					<td>${user.avatar_url}</td>
+					<td>${new Date(user.creation_ts)}</td>
+					<td><button onclick='userResetPassword(${i},"${user.name}")'>Reset Password</button></td>
+					<td><button id='user_deactivate_${i}' onclick='userDeactivate(${i},"${user.name}")'${user.deactivated ? ' disabled' : ''}>Deactivate</button></td>
+				</tr>`;
+					};
+					_el('users_table').innerHTML = tableHtml;
+				})
+				.catch((errorText) => {
+					alert(`Error getting a list of users: ${errorText}`);
+				});
+			}
+			function userResetPassword(i,user_id) {
+				const new_password = prompt('Enter a new password');
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				fetch(`${homeserver}/_synapse/admin/v1/reset_password/${user_id}`, {
+					method: 'POST',
+					headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+					body: JSON.stringify({ 'new_password': new_password, 'logout_devices': true })
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					alert(`Password for user ${user_id} was successfully reset.`);
+				})
+				.catch((errorText) => {
+					alert(`Error resetting password for user ${user_id}: ${errorText}.`);
+				});
+			}
+			function userDeactivate(i,user_id) {
+				if (!confirm(`Are you sure you want to deactivate user ${user_id}?`))
+					return;
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				fetch(`${homeserver}/_synapse/admin/v1/deactivate/${user_id}`, {
+					method: 'POST',
+					headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+					body: JSON.stringify({ 'erase': true })
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					_el(`user_deactivated_${i}`).innerText = 'Y';
+					_el(`user_deactivate_${i}`).disabled = true;
+					alert(`User ${user_id} was successfully deactivated. Matrix users cannot be deleted completely :(`)
+				})
+				.catch((errorText) => {
+					alert(`Error deactivating user ${user_id}: ${errorText}.`);
+				});
+			}
+			function roomsList(rooms_from) {
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				if (!homeserver) {
+					alert('Homeserver URL is required');
+					return;
+				}
+				if (!access_token) {
+					alert('Access token is required');
+					return;
+				}
+				let url = `${homeserver}/_synapse/admin/v1/rooms?from=${rooms_from}&limit=10`;
+				const search_term = _val('search_term');
+				if (search_term) {
+					url += `&search_term=${search_term}`
+				}
+				fetch(url, {
+					method: 'GET',
+					headers: { 'Authorization': `Bearer ${access_token}` }
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					return response.json();
+				})
+				.then((data) => {
+					_el('rooms_total').innerText = `Total rooms: ${data.total_rooms}`;
+					if (data.prev_batch != undefined) {
+						_el('rooms_prev').setAttribute('onclick', `roomsList(${data.prev_batch})`)
+						_el('rooms_prev').disabled = false;
+					} else {
+						_el('rooms_prev').disabled = true;
+					}
+					if (data.next_batch != undefined) {
+						_el('rooms_next').setAttribute('onclick', `roomsList(${data.next_batch})`)
+						_el('rooms_next').disabled = false;
+					} else {
+						_el('rooms_next').disabled = true;
+					}
+					let tableHtml = 
+`				<tr>
+					<th>ID</th>
+					<th>Name</th>
+					<th>Encryption</th>
+					<th>Creator</th>
+					<th>Members</th>
+					<th>Local Members</th>
+					<th>Local Members List</th>
+					<th></th>
+				</tr>`;
+					for (let i = 0; i < data.rooms.length; i++) {
+						const room = data.rooms[i]; 
+						tableHtml +=
+`				<tr>
+					<td>${room.room_id}</td>
+					<td>${room.name}</td>
+					<td>${room.encryption}</td>
+					<td>${room.creator}</td>
+					<td>${room.joined_members}</td>
+					<td>${room.joined_local_members}</td>
+					<td id='room_members_${i}'><button onclick='roomGetMembers(${i},"${room.room_id}")'>Members</button></td>
+					<td id='room_delete_state_${i}'><button id='room_delete_${i}' onclick='roomDelete(${i},"${room.room_id}",false)'>Delete</buton></td>
+				</tr>`;
+					};
+					_el('rooms_table').innerHTML = tableHtml;
+				})
+				.catch((errorText) => {
+					alert(`Error getting a list of rooms: ${errorText}`);
+				});
+			}
+			function roomGetMembers(i, room_id) {
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				fetch(`${homeserver}/_synapse/admin/v1/rooms/${room_id}/members`, {
+					method: 'GET',
+					headers: { 'Authorization': `Bearer ${access_token}` }
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					return response.json();
+				})
+				.then((data) => {
+					let membersHtml = '<ul>';
+					for (member of data.members) {
+						membersHtml += `<li>${member}</li>`;
+					}
+					membersHtml += '</ul>';
+					_el(`room_members_${i}`).innerHTML = membersHtml;
+				})
+				.catch((errorText) => {
+					alert(`Error getting a list of members for room ${room_id}: ${errorText}`);
+				});
+			}
+			function roomDelete(i, room_id, force) {
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				fetch(`${homeserver}/_synapse/admin/v1/rooms/${room_id}`, {
+					method: 'DELETE',
+					headers: {
+						'Authorization': `Bearer ${access_token}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						'purge': true,
+						'force_purge': (force === true)
+					})
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					_el(`room_delete_state_${i}`).innerHTML = 'DELETED';
+					alert(`Room ${room_id} successfully deleted.`);
+				})
+				.catch((errorText) => {
+					alert(`Error deleting room ${room_id}: ${errorText}`);
+				});
+			}
+			function regTokensList() {
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				if (!homeserver) {
+					alert('Homeserver URL is required');
+					return;
+				}
+				if (!access_token) {
+					alert('Access token is required');
+					return;
+				}
+				fetch(`${homeserver}/_synapse/admin/v1/registration_tokens`, {
+					method: 'GET',
+					headers: { 'Authorization': `Bearer ${access_token}` }
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					return response.json();
+				})
+				.then((data) => {
+					let tableHtml = 
+`				<tr>
+					<th>Token</th>
+					<th>Uses Allowed</th>
+					<th>Pending</th>
+					<th>Completed</th>
+					<th>Expires On</th>
+					<th></th>
+				</tr>`;
+					for (let i = 0; i < data.registration_tokens.length; i++) {
+						let regToken = data.registration_tokens[i]; 
+						tableHtml +=
+`				<tr>
+					<td>${regToken.token}</td>
+					<td>${regToken.uses_allowed ? regToken.uses_allowed : 'Infinite'}</td>
+					<td>${regToken.pending}</td>
+					<td>${regToken.completed}</td>
+					<td>${regToken.expiry_time ? new Date(regToken.expiry_time) : 'Never'}</td>
+					<td><button onclick='regTokenDelete(${i},"${regToken.token}")'>Delete</button></td>
+				</tr>`;
+					};
+					_el('reg_tokens_table').innerHTML = tableHtml;
+				})
+				.catch((errorText) => {
+					alert(`Error getting a list of registration tokens: ${errorText}`);
+				});
+			}
+			function regTokenDelete(i, token) {
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				fetch(`${homeserver}/_synapse/admin/v1/registration_tokens/${token}`, {
+					method: 'DELETE',
+					headers: {
+						'Authorization': `Bearer ${access_token}`,
+						'Content-Type': 'application/json'
+					}
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					alert(`Registration token ${token} successfully deleted.`)
+				})
+				.catch((errorText) => {
+					alert(`Error deleting registration token ${token}: ${errorText}`);
+				});
+			}
+			function regTokenNew() {
+				const homeserver = _val('homeserver');
+				const access_token = _val('access_token');
+				if (!homeserver) {
+					alert('Homeserver URL is required');
+					return;
+				}
+				if (!access_token) {
+					alert('Access token is required');
+					return;
+				}
+				let body = {};
+				const token = _val('reg_token');
+				if (token) {
+					body.token = token;
+				}
+				const uses_allowed = _val('reg_token_uses_allowed');
+				if (uses_allowed) {
+					body.uses_allowed = parseInt(uses_allowed);
+				}
+				const expiry_time = _val('reg_token_expiry_time');
+				if (expiry_time) {
+					body.expiry_time = Date.parse(expiry_time);
+				}				
+				fetch(`${homeserver}/_synapse/admin/v1/registration_tokens/new`, {
+					method: 'POST',
+					headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+					body: JSON.stringify(body)
+				})
+				.then((response) => {
+					if (!response.ok)
+						throw new Error(`${response.status} ${response.statusText}`);
+					alert('Registration token successfully created.')
+				})
+				.catch((errorText) => {
+					alert(`Error creating new registration token: ${errorText}.`);
+				});
+			}
+		</script>
+		<style>
+			html {
+				font-family: Verdana,sans-serif;
+				background-color: #aaa;
+			}
+			div, h1, h2, h3 {
+				margin-top: 2px;
+				margin-bottom: 2px;
+			}
+			button, input {
+				padding: 4px;
+				border-radius: 4px;
+			}
+			table {
+				border-collapse: collapse;
+				border: 1px solid;
+			}
+			th, td {
+				border: 1px solid;
+				padding: 4px;
+				white-space: nowrap;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Synapse Admin</h1>
+		<div>
+			Homeserver URL:
+			<input id='homeserver' type='text' value=''>
+		</div>
+		<div>
+			Access token (<a href='https://matrix-org.github.io/synapse/latest/usage/administration/admin_api/index.html#authenticate-as-a-server-admin' target='_blank'>help</a>):
+			<input id='access_token' type='password' value=''>
+		</div>
+		<div>
+			<button onclick='credentialsSave()'>Save credentials to local storage</button> (credentials stay in the browser on your machine)
+		</div>
+		<div>
+			<button onclick='credentialsClear()'>Clear credentials from local storage</button>
+		</div>
+		<hr>
+		<h2>Users</h2>
+		<div>
+			<button onclick='usersList(0)'>List users</button>
+		</div>
+		<div>
+			<span id='users_total'></span>
+		</div>
+		<div>
+			<table id='users_table'></table>
+		</div>
+		<div>
+			<button id='users_next' onclick='usersList(0)' disabled='true'>Next</button>
+		</div>
+		<hr>
+		<h2>Rooms</h2>
+		<div>
+			Search: <input id='search_term' type='text'>
+			<button onclick='roomsList(0)'>List rooms</button>
+			<!--<input id="room_from" type="hidden" value=0>
+			<input id="room_prev_batch" type="hidden" value=0>
+			<input id="room_next_batch" type="hidden" value=0>-->
+		</div>
+		<div>
+			<span id='rooms_total'></span>
+		</div>
+		<div>
+			<table id='rooms_table'></table>
+		</div>
+		<div>
+			<button id='rooms_prev' onclick='roomsList(0)' disabled='true'>Prev</button> <button id='rooms_next' onclick='roomsList(0)' disabled='true'>Next</button>
+		</div>
+		<hr>
+		<h2>Registration Tokens</h2>
+		<div>
+			<button onclick='regTokensList()'>List tokens</button>
+		</div>
+		<div>
+			<table id='reg_tokens_table'></table>
+		</div>
+		<h3>New Registration Token</h3> 
+		<div>
+			Token (leave blank for randomly generated): <input id='reg_token' type='text'>
+		</div>
+		<div>
+			Uses (leave blank for unlimited uses): <input id='reg_token_uses_allowed' type='number'>
+		</div>
+		<div>
+			Expiration (leave blank for no expiration)<input id='reg_token_expiry_time' type='date'>
+		</div>
+		<div>
+			<button onclick='regTokenNew()'>Create New Token</button>
+		</div>
+		<hr>
+		<div>
+			<small>made by <a href='https://yaky.dev'>Yaky</a></small>
+		</div>
+		<div>
+			<small><a href='https://github.com/yaky-dev/synapse-admin'>source</a> (you can save this page and run it locally)</small>
+		</div>
+	</body>
+</html>
