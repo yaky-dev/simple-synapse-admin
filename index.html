@@ -38,7 +38,7 @@
 					alert('Access token is required');
 					return;
 				}
-				fetch(`${homeserver}/_synapse/admin/v2/users?from=${users_from}&limit=10&guests=true&deactivated=true`, {
+				fetch(`${homeserver}/_synapse/admin/v2/users?from=${users_from}&guests=true&deactivated=true&limit=20`, {
 					method: 'GET',
 					headers: { 'Authorization': `Bearer ${access_token}` }
 				})
@@ -84,7 +84,7 @@
 					<td>${user.shadow_banned ? 'Y' : ''}</td>
 					<td>${user.avatar_url}</td>
 					<td>${new Date(user.creation_ts)}</td>
-					<td><button onclick='userResetPassword(${i},"${user.name}")'>Reset Password</button></td>
+					<td><button onclick='userResetPassword(${i},"${user.name}")'>Reset password</button></td>
 					<td><button id='user_deactivate_${i}' onclick='userDeactivate(${i},"${user.name}")'${user.deactivated ? ' disabled' : ''}>Deactivate</button></td>
 				</tr>`;
 					};
@@ -144,7 +144,7 @@
 					alert('Access token is required');
 					return;
 				}
-				let url = `${homeserver}/_synapse/admin/v1/rooms?from=${rooms_from}&limit=10`;
+				let url = `${homeserver}/_synapse/admin/v1/rooms?from=${rooms_from}&limit=20`;
 				const search_term = _val('search_term');
 				if (search_term) {
 					url += `&search_term=${search_term}`
@@ -248,7 +248,9 @@
 					alert(`Room ${room_id} successfully deleted.`);
 				})
 				.catch((errorText) => {
-					alert(`Error deleting room ${room_id}: ${errorText}`);
+					alert(`Error deleting room ${room_id}: ${errorText}. You can try to force purge the room.`);
+					_el(`room_delete_${i}`).setAttribute('onclick', `roomDelete(${i},"${room_id}",true)`);
+					_el(`room_delete_${i}`).innerText = 'Force purge';
 				});
 			}
 			function regTokensList() {
@@ -416,9 +418,6 @@
 		<div>
 			Search: <input id='search_term' type='text'>
 			<button onclick='roomsList(0)'>List rooms</button>
-			<!--<input id="room_from" type="hidden" value=0>
-			<input id="room_prev_batch" type="hidden" value=0>
-			<input id="room_next_batch" type="hidden" value=0>-->
 		</div>
 		<div>
 			<span id='rooms_total'></span>
@@ -448,7 +447,7 @@
 			Expiration (leave blank for no expiration)<input id='reg_token_expiry_time' type='date'>
 		</div>
 		<div>
-			<button onclick='regTokenNew()'>Create New Token</button>
+			<button onclick='regTokenNew()'>Create new token</button>
 		</div>
 		<hr>
 		<div>
