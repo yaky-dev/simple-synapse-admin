@@ -13,11 +13,11 @@ This is a simple, single-page admin tool for Synapse that allows you to:
 
 ## How to use
 
-First, you need to [set yourself up as admin and get the access token](https://matrix-org.github.io/synapse/latest/usage/administration/admin_api/index.html#authenticate-as-a-server-admin), and your server's Admin API has to be accessible, [which is a risk](https://matrix-org.github.io/synapse/latest/reverse_proxy.html#synapse-administration-endpoints).
+First, [set up an admin user and get the access token](https://matrix-org.github.io/synapse/latest/usage/administration/admin_api/index.html#authenticate-as-a-server-admin). Then, enable access to your server's [administration endpoints](https://matrix-org.github.io/synapse/latest/reverse_proxy.html#synapse-administration-endpoints).
 
-Open [Synapse Admin hosted on yaky.dev](https://yaky.dev/synapse-admin] and enter your homeserver address and admin access token.
+Open [Synapse Admin hosted on GitHub Pages](https://yaky-dev.github.io/synapse-admin/) or [Synapse Admin hosted on yaky.dev](https://yaky.dev/apps/synapse-admin/) and enter your homeserver address and admin access token.
 
-"Save credentials to local storage" is an optional convenience feature. If saved, credentials are automatically set next time you open the page. Credentials stay in your browser and are not transmitted anywhere. "Clear credentials from local storage" clears credential inputs and all of local storage.
+"Save credentials" is an optional convenience feature. If saved, credentials will be automatically set next time you open the page. Credentials are saved to local storage in your browser and are not transmitted anywhere. "Clear credentials" clears credential inputs and all of local storage.
 
 ### Users
 

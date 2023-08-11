@@ -127,7 +127,7 @@
 						throw new Error(`${response.status} ${response.statusText}`);
 					_el(`user_deactivated_${i}`).innerText = 'Y';
 					_el(`user_deactivate_${i}`).disabled = true;
-					alert(`User ${user_id} was successfully deactivated. Matrix users cannot be deleted completely :(`)
+					alert(`User ${user_id} was successfully deactivated and erased. Synapse cannot delete user accounts completely.`)
 				})
 				.catch((errorText) => {
 					alert(`Error deactivating user ${user_id}: ${errorText}.`);
@@ -386,18 +386,21 @@
 	<body>
 		<h1>Synapse Admin</h1>
 		<div>
+			<small>by <a href='https://yaky.dev'>yaky.dev</a> | <a href='https://github.com/yaky-dev/synapse-admin#readme'>readme</a> | <a href='https://github.com/yaky-dev/synapse-admin'>source</a></small>
+		</div>
+		<div>
 			Homeserver URL:
 			<input id='homeserver' type='text' value=''>
 		</div>
 		<div>
-			Access token (<a href='https://matrix-org.github.io/synapse/latest/usage/administration/admin_api/index.html#authenticate-as-a-server-admin' target='_blank'>help</a>):
+			Access token (<a href='https://matrix-org.github.io/synapse/latest/usage/administration/admin_api/index.html#authenticate-as-a-server-admin' target='_blank'>how to</a>):
 			<input id='access_token' type='password' value=''>
 		</div>
 		<div>
-			<button onclick='credentialsSave()'>Save credentials to local storage</button> (credentials stay in the browser on your machine)
+			<button onclick='credentialsSave()'>Save credentials</button> (credentials stay in local storage in the browser on your machine)
 		</div>
 		<div>
-			<button onclick='credentialsClear()'>Clear credentials from local storage</button>
+			<button onclick='credentialsClear()'>Clear credentials</button>
 		</div>
 		<hr>
 		<h2>Users</h2>
@@ -448,13 +451,6 @@
 		</div>
 		<div>
 			<button onclick='regTokenNew()'>Create new token</button>
-		</div>
-		<hr>
-		<div>
-			<small>made by <a href='https://yaky.dev'>Yaky</a></small>
-		</div>
-		<div>
-			<small><a href='https://github.com/yaky-dev/synapse-admin'>source</a> (you can save this page and run it locally)</small>
 		</div>
 	</body>
 </html>
