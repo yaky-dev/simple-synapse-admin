@@ -1,4 +1,4 @@
-# Synapse Admin
+# Simple Synapse Admin
 
 This is a simple, single-page admin tool for Synapse that allows you to:
 - List users
@@ -15,7 +15,7 @@ This is a simple, single-page admin tool for Synapse that allows you to:
 
 First, [set up an admin user and get the access token](https://matrix-org.github.io/synapse/latest/usage/administration/admin_api/index.html#authenticate-as-a-server-admin). Then, enable access to your server's [administration endpoints](https://matrix-org.github.io/synapse/latest/reverse_proxy.html#synapse-administration-endpoints).
 
-Open [Synapse Admin hosted on GitHub Pages](https://yaky-dev.github.io/synapse-admin/) or [Synapse Admin hosted on yaky.dev](https://yaky.dev/apps/synapse-admin/) and enter your homeserver address and admin access token.
+Open [Simple Synapse Admin hosted on GitHub Pages](https://yaky-dev.github.io/simple-synapse-admin/) or [Simple Synapse Admin hosted on yaky.dev](https://yaky.dev/apps/simple-synapse-admin/) and enter your homeserver address and admin access token.
 
 "Save credentials" is an optional convenience feature. If saved, credentials will be automatically set next time you open the page. Credentials are saved to local storage in your browser and are not transmitted anywhere. "Clear credentials" clears credential inputs and all of local storage.
 
@@ -53,7 +53,7 @@ Local storage has [undefined behavior when running locally](https://developer.mo
 
 ## Source and privacy
 
-Synapse Admin is a single HTML page, less than 500 lines of uncompressed and readable code. It runs in the browser and only communicates to the Admin API of the specified homeserver, using the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch). Credentials can be optionally saved to local storage, which resides on your machine.
+Simple Synapse Admin is a single HTML page, less than 500 lines of uncompressed and readable code. It runs in the browser and only communicates to the Admin API of the specified homeserver, using the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch). Credentials can be optionally saved to local storage, which resides on your machine.
 
 ## Running locally
 
